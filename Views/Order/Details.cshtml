@@ -1,0 +1,75 @@
+@using FoodDeliveryApp.Models
+@{
+    ViewData["Title"] = "Order Details";
+    var order = (Order)ViewBag.Order;
+}
+
+<section class="page-shell">
+    <div class="page-heading">
+        <p class="eyebrow">Live order</p>
+        <h1>Order Confirmed</h1>
+        <p>Your order has been accepted and the delivery workflow has started.</p>
+    </div>
+
+    <div class="details-grid">
+        <section class="summary-panel">
+            <h2>Order Summary</h2>
+            <dl>
+                <dt>Restaurant</dt>
+                <dd>@order.RestaurantFactory?.GetRestaurantName()</dd>
+                <dt>Delivery Packaging</dt>
+                <dd>@order.RestaurantFactory?.GetPackagingType()</dd>
+                <dt>Branding</dt>
+                <dd>@order.RestaurantFactory?.GetBranding()</dd>
+                <dt>Menu Positioning</dt>
+                <dd>@order.RestaurantFactory?.GetMenuPositioning()</dd>
+                <dt>Meal</dt>
+                <dd>@order.Meal?.GetDescription()</dd>
+                <dt>Status</dt>
+                <dd>@order.Status</dd>
+            </dl>
+        </section>
+
+        <section class="summary-panel">
+            <h2>Payment</h2>
+            <dl>
+                <dt>Payment</dt>
+                <dd>@order.PaymentStrategy?.GetPaymentDetails()</dd>
+                <dt>Original Amount</dt>
+                <dd>R @order.PaymentResult?.OriginalAmount.ToString("0.00")</dd>
+                <dt>Final Amount</dt>
+                <dd>R @order.PaymentResult?.FinalAmount.ToString("0.00")</dd>
+                <dt>Processing Message</dt>
+                <dd>@order.PaymentResult?.Message</dd>
+            </dl>
+        </section>
+    </div>
+
+    <section class="timeline">
+        <div>
+            <h2>Order Notifications</h2>
+        </div>
+        @foreach (var notification in order.Notifications)
+        {
+            <article class="timeline-item">
+                <strong>@notification.Stakeholder</strong>
+                <span>@notification.TimeStamp.ToString("HH:mm:ss")</span>
+                <p>@notification.Message</p>
+            </article>
+        }
+    </section>
+
+    <section class="log-panel">
+        <div>
+            <h2>System Log</h2>
+        </div>
+        <div class="terminal">
+            @foreach (var log in ViewBag.Logger)
+            {
+                <div>@log</div>
+            }
+        </div>
+    </section>
+
+    <a asp-action="Create" class="secondary-action">Place Another Order</a>
+</section>

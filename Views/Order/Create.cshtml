@@ -1,0 +1,164 @@
+@{
+    ViewData["Title"] = "Create Order";
+}
+
+<section class="page-shell">
+    <div class="page-heading">
+        <p class="eyebrow">BITE checkout</p>
+        <h1>Create a Food Delivery Order</h1>
+        <p>Select a restaurant, choose from its own menu, customize your meal, and checkout.</p>
+    </div>
+
+    <form asp-action="Create" method="post" class="order-form">
+        <section class="form-section">
+            <div>
+                <h2>Restaurant</h2>
+            </div>
+            <div class="option-grid three">
+                <label class="choice">
+                    <input type="radio" name="restaurantType" value="FastFood" checked>
+                    <strong>BITE Fast Food</strong>
+                    <span>Burgers, pizza, fries, and shakes.</span>
+                </label>
+                <label class="choice">
+                    <input type="radio" name="restaurantType" value="Premium">
+                    <strong>Urban Table Premium</strong>
+                    <span>Steakhouse and bistro-style meals.</span>
+                </label>
+                <label class="choice">
+                    <input type="radio" name="restaurantType" value="Healthy">
+                    <strong>GreenBowl Healthy</strong>
+                    <span>Bowls, wraps, smoothies, and lighter meals.</span>
+                </label>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div>
+                <h2>Menu</h2>
+            </div>
+            <select name="mealType" id="mealType" class="input-control"></select>
+            <p id="mealDescription" class="field-note"></p>
+        </section>
+
+        <section class="form-section">
+            <div>
+                <h2>Meal Customization</h2>
+            </div>
+            <div id="customizationOptions" class="option-grid three"></div>
+            <p id="customizationNote" class="field-note"></p>
+        </section>
+
+        <section class="form-section">
+            <div>
+                <h2>Payment and Pricing</h2>
+            </div>
+            <div class="option-grid three">
+                <label class="choice compact"><input type="radio" name="paymentType" value="credit" checked> Credit Card</label>
+                <label class="choice compact"><input type="radio" name="paymentType" value="eft"> EFT</label>
+                <label class="choice compact"><input type="radio" name="paymentType" value="payfast"> PayFast</label>
+                <label class="choice compact"><input type="radio" name="paymentType" value="promo"> Promo Discount</label>
+                <label class="choice compact"><input type="radio" name="paymentType" value="loyalty"> Loyalty Discount</label>
+                <label class="choice compact"><input type="radio" name="paymentType" value="surge"> Surge Delivery Fee</label>
+            </div>
+            <input type="text" name="promoCode" placeholder="Promo code, optional" class="input-control mt">
+        </section>
+
+        <button type="submit" class="primary-action">Place Order</button>
+    </form>
+</section>
+
+@section Scripts {
+    <script>
+        const restaurantMenus = @Json.Serialize(ViewBag.RestaurantMenus);
+        const customizationCatalog = @Json.Serialize(ViewBag.CustomizationOptions);
+        const mealSelect = document.querySelector("#mealType");
+        const mealDescription = document.querySelector("#mealDescription");
+        const customizationOptions = document.querySelector("#customizationOptions");
+        const customizationNote = document.querySelector("#customizationNote");
+        const restaurantInputs = document.querySelectorAll("input[name='restaurantType']");
+
+        function normalizeMenuItem(item) {
+            return {
+                value: item.value ?? item.Value,
+                name: item.name ?? item.Name,
+                description: item.description ?? item.Description,
+                basePrice: item.basePrice ?? item.BasePrice,
+                customizationKeys: item.customizationKeys ?? item.CustomizationKeys ?? []
+            };
+        }
+
+        function normalizeCustomization(item) {
+            return {
+                value: item.value ?? item.Value,
+                name: item.name ?? item.Name,
+                price: item.price ?? item.Price
+            };
+        }
+
+        function selectedRestaurant() {
+            return document.querySelector("input[name='restaurantType']:checked").value;
+        }
+
+        function selectedMealItem() {
+            return normalizeMenuItem(restaurantMenus[selectedRestaurant()]
+                .find(menuItem => normalizeMenuItem(menuItem).value === mealSelect.value));
+        }
+
+        function updateMealDescription() {
+            const item = selectedMealItem();
+            mealDescription.textContent = `${item.description} - R${Number(item.basePrice).toFixed(2)}`;
+        }
+
+        function loadCustomizations() {
+            const item = selectedMealItem();
+            customizationOptions.innerHTML = "";
+
+            if (item.customizationKeys.length === 0) {
+                customizationNote.textContent = "No customizations are available for this item.";
+                return;
+            }
+
+            customizationNote.textContent = "Available extras are matched to the selected meal.";
+
+            for (const key of item.customizationKeys) {
+                const catalogItem = normalizeCustomization(customizationCatalog[key]);
+                const label = document.createElement("label");
+                label.className = "choice compact";
+
+                const input = document.createElement("input");
+                input.type = "checkbox";
+                input.name = "extras";
+                input.value = catalogItem.value;
+
+                const price = document.createElement("span");
+                price.textContent = `+R${Number(catalogItem.price).toFixed(0)}`;
+
+                label.append(input, ` ${catalogItem.name} `, price);
+                customizationOptions.appendChild(label);
+            }
+        }
+
+        function loadMenu() {
+            const menu = restaurantMenus[selectedRestaurant()].map(normalizeMenuItem);
+            mealSelect.innerHTML = "";
+
+            for (const item of menu) {
+                const option = document.createElement("option");
+                option.value = item.value;
+                option.textContent = `${item.name} - R${Number(item.basePrice).toFixed(2)}`;
+                mealSelect.appendChild(option);
+            }
+
+            updateMealDescription();
+            loadCustomizations();
+        }
+
+        restaurantInputs.forEach(input => input.addEventListener("change", loadMenu));
+        mealSelect.addEventListener("change", () => {
+            updateMealDescription();
+            loadCustomizations();
+        });
+        loadMenu();
+    </script>
+}
